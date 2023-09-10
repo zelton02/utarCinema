@@ -19,37 +19,47 @@ const SignUpScreen = ({navigation}) => {
     });
   }, []);
 
+  const validateFields = () => {
+    if (!username.trim() || !email.trim() || !password.trim()) {
+      setErrorMessage('Please fill in all fields');
+      return false;
+    }
+    return true;
+  };
+
   const handleSignUp = () => {
-    db.transaction(tx => {
-      tx.executeSql(
-        'SELECT * FROM users WHERE email = ?',
-        [email],
-        (_, result) => {
-          const {rows} = result;
-          if (rows.length === 0) {
-            // Email is not in use, proceed with sign up
-            tx.executeSql(
-              'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-              [username, email, password],
-              (_, result) => {
-                setErrorMessage('');
-                navigation.navigate('Home'); // Navigate to Home after successful sign up
-              },
-              error => {
-                console.error('Error during sign up:', error);
-                setErrorMessage('An error occurred during sign up');
-              },
-            );
-          } else {
-            setErrorMessage('Email is already in use');
-          }
-        },
-        error => {
-          console.error('Error during SQL query:', error);
-          setErrorMessage('An error occurred during sign up');
-        },
-      );
-    });
+    if (validateFields()) {
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM users WHERE email = ?',
+          [email],
+          (_, result) => {
+            const {rows} = result;
+            if (rows.length === 0) {
+              // Email is not in use, proceed with sign up
+              tx.executeSql(
+                'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+                [username, email, password],
+                (_, result) => {
+                  setErrorMessage('');
+                  navigation.navigate('Home'); // Navigate to Home after successful sign up
+                },
+                error => {
+                  console.error('Error during sign up:', error);
+                  setErrorMessage('An error occurred during sign up');
+                },
+              );
+            } else {
+              setErrorMessage('Email is already in use');
+            }
+          },
+          error => {
+            console.error('Error during SQL query:', error);
+            setErrorMessage('An error occurred during sign up');
+          },
+        );
+      });
+    }
   };
 
   return (

@@ -7,12 +7,9 @@ import {
   Text,
   Image,
   ImageBackground,
-} from 'react-native'; // Import ImageBackground
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SQLite from 'react-native-sqlite-storage';
-import CinemaHome from './cinemahome';
-import HomeScreen from './HomeScreen';
-let SQLITE = require('react-native-sqlite-storage');
 
 function LoginScreen({navigation}) {
   const [email, setEmail] = useState('');
@@ -30,53 +27,62 @@ function LoginScreen({navigation}) {
     setDb(db);
   }, []);
 
+  const validateFields = () => {
+    if (!email.trim() || !password.trim()) {
+      setErrorMessage('Please enter both email and password');
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = () => {
-    if (db) {
-      db.transaction(tx => {
-        tx.executeSql(
-          'SELECT * FROM users WHERE email = ? AND password = ?',
-          [email, password],
-          (_, result) => {
-            const {rows} = result;
-            if (rows.length > 0) {
-              // User data found, store it and navigate to HomeScreen
-              const userData = {
-                email: rows.item(0).email, // Replace with the correct column names
-                // Add other user-related data here
-              };
+    if (validateFields()) {
+      if (db) {
+        db.transaction(tx => {
+          tx.executeSql(
+            'SELECT * FROM users WHERE email = ? AND password = ?',
+            [email, password],
+            (_, result) => {
+              const {rows} = result;
+              if (rows.length > 0) {
+                // User data found, store it and navigate to HomeScreen
+                const userData = {
+                  email: rows.item(0).email, // Replace with the correct column names
+                  // Add other user-related data here
+                };
 
-              AsyncStorage.setItem('userData', JSON.stringify(userData))
-                .then(() => {
-                  // Set a timer to clear user data after 10 minutes
-                  setTimeout(() => {
-                    AsyncStorage.removeItem('userData')
-                      .then(() => {
-                        console.log('User data cleared after 10 minutes');
-                      })
-                      .catch(error => {
-                        console.error('Error clearing user data:', error);
-                      });
-                  }, 100 * 60 * 1000); // 100 minutes in milliseconds
+                AsyncStorage.setItem('userData', JSON.stringify(userData))
+                  .then(() => {
+                    // Set a timer to clear user data after 10 minutes
+                    setTimeout(() => {
+                      AsyncStorage.removeItem('userData')
+                        .then(() => {
+                          console.log('User data cleared after 10 minutes');
+                        })
+                        .catch(error => {
+                          console.error('Error clearing user data:', error);
+                        });
+                    }, 100 * 60 * 1000); // 100 minutes in milliseconds
 
-                  // Redirect to the HomeScreen on successful login
-
-                  navigation.replace('HomeScreen');
-                })
-                .catch(error => {
-                  console.error('Error storing user data:', error);
-                });
-            } else {
-              setErrorMessage('Invalid email or password');
-              setShowSignUpButton(true);
-            }
-          },
-          error => {
-            console.error('Error during SQL query:', error);
-          },
-        );
-      });
-    } else {
-      console.log('Database not initialized');
+                    // Redirect to the HomeScreen on successful login
+                    navigation.replace('HomeScreen');
+                  })
+                  .catch(error => {
+                    console.error('Error storing user data:', error);
+                  });
+              } else {
+                setErrorMessage('Invalid email or password');
+                setShowSignUpButton(true);
+              }
+            },
+            error => {
+              console.error('Error during SQL query:', error);
+            },
+          );
+        });
+      } else {
+        console.log('Database not initialized');
+      }
     }
   };
 
